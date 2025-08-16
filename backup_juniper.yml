@@ -1,17 +1,17 @@
 ---
-- name: Backup Juniper devices configuration
-  hosts: all
+- name: Backup Konfigurasi Switch Juniper
+  hosts: juniper_switches
   gather_facts: false
   
   tasks:
-    - name: Run 'show configuration | display set' command
-      juniper.device.cli:
-        host: "{{ inventory_hostname }}"
-        command: "show configuration | display set"
-      register: config_output
+    - name: Mengambil konfigurasi aktif
+      junipernetworks.junos.junos_rpc:
+        rpc: "get-config"
+        format: xml
+      register: junos_config_xml
 
-    - name: Save configuration to a file
+    - name: Menyimpan konfigurasi dalam format XML
       ansible.builtin.copy:
-        content: "{{ config_output.stdout_lines | join('\n') }}"
-        dest: "./backups/{{ inventory_hostname }}.cfg"
+        content: "{{ junos_config_xml.xml_config }}"
+        dest: "backup/{{ inventory_hostname }}.xml"
       delegate_to: localhost
