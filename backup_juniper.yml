@@ -2,9 +2,10 @@
 - name: Backup Konfigurasi Switch Juniper
   hosts: juniper_switches
   gather_facts: false
-  
+
   tasks:
     - name: Mengambil konfigurasi aktif
+      # BARIS INI HARUS PERSIS SEPERTI INI DI GITHUB:
       junipernetworks.junos.junos_rpc:
         rpc: "get-config"
         format: xml
