@@ -1,0 +1,17 @@
+---
+- name: Backup Juniper devices configuration
+  hosts: all
+  gather_facts: false
+  
+  tasks:
+    - name: Run 'show configuration | display set' command
+      juniper.device.cli:
+        host: "{{ inventory_hostname }}"
+        command: "show configuration | display set"
+      register: config_output
+
+    - name: Save configuration to a file
+      ansible.builtin.copy:
+        content: "{{ config_output.stdout_lines | join('\n') }}"
+        dest: "./backups/{{ inventory_hostname }}.cfg"
+      delegate_to: localhost
