@@ -6,10 +6,10 @@
 
   tasks:
     - name: Ensure backup directory exists (local)
-      delegate_to: localhost
       file:
         path: /home/iass/awx-deploy/backup
         state: directory
+      delegate_to: localhost
       run_once: true
       register: backup_dir
 
@@ -26,9 +26,9 @@
       debug:
         var: config_output
 
-    - name: Save config directly on controller
-      delegate_to: localhost
-      copy:
+    - name: Save config to file (local)
+      local_action:
+        module: copy
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
       register: save_result
