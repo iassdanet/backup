@@ -6,11 +6,8 @@
   tasks:
     - name: Ambil konfigurasi aktif
       junipernetworks.junos.junos_command:
+        # Perintah ini sebaiknya diubah menjadi list atau gunakan junos_rpc untuk keandalan lebih
         commands: "show configuration | display set"
-        provider:
-          host: "{{ ansible_host }}"
-          username: "{{ ansible_user }}"
-          password: "{{ ansible_password }}"
       register: config
 
     - name: Buat folder backup di localhost
