@@ -16,19 +16,17 @@
         commands: show configuration
       register: config_output
 
-    - name: Create empty backup file first
-      file:
-        path: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
-        state: touch
-      delegate_to: localhost
+    - name: Sanitize hostname (replace spaces with underscores)
+      set_fact:
+        safe_hostname: "{{ inventory_hostname | regex_replace(' ', '_') }}"
 
-    - name: Write config output into file
+    - name: Save config to file (local)
       copy:
-        content: "{{ config_output.stdout[0] }}"
-        dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        dest: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
       delegate_to: localhost
       register: save_result
 
-    - name: Debug confirm file saved
+    - name: Debug - confirm file saved
       debug:
         var: save_result
