@@ -1,36 +1,36 @@
 ---
-- name: Cadangkan Konfigurasi Juniper
-  hosts: juniper_switches # Target host Juniper dari inventory Anda
+- name: Cadangkan Konfigurasi Juniper via NETCONF
+  hosts: juniper_switches
+  connection: ansible.netcommon.netconf
   gather_facts: no
-  collections:
-    - junipernetworks.junos # Pastikan koleksi ini terinstal
-  connection: ansible.netcommon.netconf # Koneksi via NETCONF (perlu ncclient & NETCONF di device)
 
   vars:
-    backup_folder: "./juniper_config_backups" # Folder untuk menyimpan file backup
+    backup_root: "./backup"
+    backup_date: "{{ ansible_date_time.date }}"
+    backup_dir: "{{ backup_root }}/{{ backup_date }}"
 
   tasks:
-    - name: Buat folder backup jika belum ada di komputer lokal
+    - name: Buat folder backup per tanggal
       ansible.builtin.file:
-        path: "{{ backup_folder }}"
+        path: "{{ backup_dir }}"
         state: directory
-        mode: '0755'
-      delegate_to: localhost # Pastikan tugas ini berjalan di mesin Ansible Anda
+      delegate_to: localhost
 
     - name: Ambil konfigurasi aktif dari perangkat Juniper
       junipernetworks.junos.junos_rpc:
-        rpc: get-configuration # Menggunakan RPC standar untuk mengambil konfigurasi
-        # Parameter 'format' TIDAK didukung oleh modul junos_rpc, jadi dihapus.
-      register: junos_config_output # Output konfigurasi akan disimpan di sini
+        rpc: get-config
+        output: text
+      register: running_config
 
-    - name: Simpan konfigurasi ke file backup di komputer lokal
+    - name: Simpan konfigurasi ke file lokal
       ansible.builtin.copy:
-        # Isi file diambil dari output RPC (stdout[0] berisi teks konfigurasi, biasanya XML)
-        content: "{{ junos_config_output.stdout[0] }}"
-        # Nama file unik dengan hostname dan timestamp
-        dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
-      delegate_to: localhost # Pastikan tugas ini berjalan di mesin Ansible Anda
+        content: "{{ running_config.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}.conf"
+      delegate_to: localhost
 
-    - name: Tampilkan pesan sukses
-      ansible.builtin.debug:
-        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
+    - name: Kompres hasil backup jadi tar.gz
+      ansible.builtin.archive:
+        path: "{{ backup_dir }}"
+        dest: "{{ backup_root }}/juniper-backup-{{ backup_date }}.tar.gz"
+        format: gz
+      delegate_to: localhost
