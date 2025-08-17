@@ -5,7 +5,8 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    backup_dir: "/home/iass/awx-deploy/backup"
+    # Simpan di folder baru, di luar direktori proyek
+    backup_dir: "/home/iass/awx-deploy/junos_backups"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
@@ -23,7 +24,7 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi ke file permanen di direktori proyek
+    - name: Simpan konfigurasi ke file permanen di luar direktori proyek
       copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ file_path }}"
