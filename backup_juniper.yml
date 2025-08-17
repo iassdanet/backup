@@ -1,6 +1,6 @@
 ---
 - name: Backup konfigurasi Juniper via NETCONF
-  hosts: juniper_switches
+  hosts: junos
   connection: ansible.netcommon.netconf
   gather_facts: no
 
@@ -16,18 +16,18 @@
         state: directory
       delegate_to: localhost
 
-    - name: Ambil konfigurasi aktif (running config)
-      junipernetworks.junos.junos_config:
-        retrieve: running
-        format: text
+    - name: Ambil konfigurasi aktif via RPC
+      junipernetworks.junos.junos_rpc:
+        rpc: get-config
+        output: text
       register: running_config
 
     - name: Debug isi config (cek sukses/tidak)
       ansible.builtin.debug:
-        var: running_config['config']
+        var: running_config['stdout'][0]
 
     - name: Simpan konfigurasi ke file lokal (.txt)
       ansible.builtin.copy:
-        content: "{{ running_config['config'] }}"
+        content: "{{ running_config['stdout'][0] }}"
         dest: "{{ backup_dir }}/{{ inventory_hostname }}-{{ backup_date }}.txt"
       delegate_to: localhost
