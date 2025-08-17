@@ -1,23 +1,18 @@
-- name: Backup konfigurasi Juniper
+---
+- name: backup config
   hosts: juniper_switches
-  connection: ansible.netcommon.netconf
   gather_facts: no
+  collections:
+    - ansible.netcommon
 
-  tasks:
-    - name: Backup konfigurasi aktif
-      junipernetworks.junos.junos_config:
-        backup: yes
-      register: backup_out
+ tasks:
+    - name: Menjalankan perintah show configuration
+      junipernetworks.junos.junos_cli:
+        command: "show configuration | display set"
+      register: junos_config_cli
 
-    - name: Buat folder backup di localhost
-      ansible.builtin.file:
-        path: backup
-        state: directory
-        mode: '0755'
-      delegate_to: localhost
-
-    - name: Simpan hasil backup dengan timestamp
+    - name: Menyimpan konfigurasi dalam format teks
       ansible.builtin.copy:
-        content: "{{ backup_out.backup_path | default('') | ansible.builtin.slurp }}"
-        dest: "backup/{{ inventory_hostname }}-{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.conf"
+        content: "{{ junos_config_cli.stdout }}"
+        dest: "backup/{{ inventory_hostname }}.txt"
       delegate_to: localhost
