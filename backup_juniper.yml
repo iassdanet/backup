@@ -5,7 +5,6 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Menggunakan jalur yang Anda inginkan
     backup_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
@@ -40,3 +39,8 @@
       ansible.builtin.debug:
         msg: "File {{ file_path }} ada: {{ file_check.stat.exists }}"
       delegate_to: localhost
+
+    - name: Jeda untuk verifikasi
+      ansible.builtin.pause:
+        seconds: 30
+        prompt: "Tekan enter untuk melanjutkan"
