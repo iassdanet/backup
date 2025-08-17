@@ -3,7 +3,6 @@
   hosts: juniper_switches
   gather_facts: no
   connection: ansible.netcommon.netconf
-
   vars:
     backup_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
@@ -25,7 +24,7 @@
 
     - name: Buat dan verifikasi file dalam satu tugas
       ansible.builtin.shell: |
-        echo "{{ config_output.stdout[0] }}" > "{{ file_path }}"
+        echo "{{ config_output.stdout[0] }}" | tee "{{ file_path }}"
         echo "--- FILE CONTENT ---"
         cat "{{ file_path }}"
         echo "--- END FILE CONTENT ---"
