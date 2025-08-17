@@ -23,24 +23,13 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi ke file permanen
-      ansible.builtin.copy:
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ file_path }}"
+    - name: Buat dan verifikasi file dalam satu tugas
+      ansible.builtin.shell: |
+        echo "{{ config_output.stdout[0] }}" > "{{ file_path }}"
+        echo "--- FILE CONTENT ---"
+        cat "{{ file_path }}"
+        echo "--- END FILE CONTENT ---"
+        ls -l "{{ file_path }}"
+      args:
+        executable: /bin/bash
       delegate_to: localhost
-
-    - name: Verifikasi file dibuat
-      ansible.builtin.stat:
-        path: "{{ file_path }}"
-      register: file_check
-      delegate_to: localhost
-
-    - name: Debug - Tampilkan hasil verifikasi
-      ansible.builtin.debug:
-        msg: "File {{ file_path }} ada: {{ file_check.stat.exists }}"
-      delegate_to: localhost
-
-    - name: Jeda untuk verifikasi
-      ansible.builtin.pause:
-        seconds: 30
-        prompt: "Tekan enter untuk melanjutkan"
