@@ -5,7 +5,8 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    backup_dir: "../junos_backups"
+    # Menggunakan jalur yang Anda inginkan
+    backup_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
