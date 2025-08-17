@@ -24,11 +24,10 @@
       register: config_output
 
     - name: Simpan konfigurasi ke file permanen
-      ansible.builtin.template:
-        src: ../junos_backups_template.j2
-        dest: "{{ file_path }}"
-      vars:
-        config_text: "{{ config_output.stdout[0] }}"
+      ansible.builtin.file:
+        path: "{{ file_path }}"
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        mode: '0644'
       delegate_to: localhost
 
     - name: Verifikasi file dibuat
