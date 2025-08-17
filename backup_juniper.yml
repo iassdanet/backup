@@ -1,8 +1,9 @@
 ---
 - name: Backup konfigurasi Juniper
   hosts: juniper_switches
-  connection: local
+  connection: ansible.netcommon.netconf
   gather_facts: no
+
   tasks:
     - name: Buat folder backup dengan tanggal
       ansible.builtin.file:
@@ -11,11 +12,11 @@
         mode: '0755'
 
     - name: Ambil konfigurasi committed
-      junipernetworks.junos.junos_config:
-        retrieve: committed
+      junipernetworks.junos.junos_command:
+        commands: "show configuration | display set"
       register: backup_cfg
 
     - name: Simpan hasil backup ke file
       copy:
-        content: "{{ backup_cfg['config'] }}"
+        content: "{{ backup_cfg.stdout[0] }}"
         dest: "./backups/{{ inventory_hostname }}/{{ inventory_hostname }}-{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.conf"
