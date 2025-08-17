@@ -1,5 +1,5 @@
 - name: Backup Junos configuration
-  hosts: juniper+switches
+  hosts: juniper_switches
   connection: ansible.netcommon.netconf
   gather_facts: no
 
