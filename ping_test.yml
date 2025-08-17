@@ -1,22 +1,33 @@
 ---
 - name: Test Junos connectivity
-  hosts: juniper_switches
+  hosts: junos
   gather_facts: no
-  connection: ansible.netcommon.netconf
+  collections:
+    - junipernetworks.junos
 
   tasks:
     - name: Get Junos facts
       junipernetworks.junos.junos_facts:
       register: junos_facts
 
+    - name: Run "show version"
+      junipernetworks.junos.junos_command:
+        commands:
+          - "show version | display json"
+      register: show_version
+
     - name: Show all facts (debugging)
       debug:
         var: junos_facts
 
+    - name: Show Junos version (from show version)
+      debug:
+        msg: "Version: {{ show_version.stdout[0]['software-information'][0]['junos-version'][0]['data'] }}"
+
     - name: Show important device info
       debug:
         msg: |
-          Hostname : {{ junos_facts.ansible_facts.junos.hostname }}
-          Version  : {{ junos_facts.ansible_facts.junos.version }}
-          Model    : {{ junos_facts.ansible_facts.junos.model }}
-          Serial   : {{ junos_facts.ansible_facts.junos.serialnumber }}
+          Hostname : {{ junos_facts.ansible_facts.ansible_net_hostname }}
+          Version  : {{ show_version.stdout[0]['software-information'][0]['junos-version'][0]['data'] }}
+          Model    : {{ junos_facts.ansible_facts.ansible_net_model }}
+          Serial   : {{ junos_facts.ansible_facts.ansible_net_serialnum }}
