@@ -5,8 +5,9 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Menggunakan jalur permanen di luar direktori proyek AWX
-    backup_dir: "/home/iass/junos_backups"
+    # Menggunakan jalur relatif yang pasti bisa diakses
+    # Ini akan membuat folder 'junos_backups' satu tingkat di atas direktori proyek
+    backup_dir: "../junos_backups"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
