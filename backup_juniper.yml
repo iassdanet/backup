@@ -1,4 +1,4 @@
-- name: Backup Junos Configuration
+- name: Retrieve Junos configuration (committed, candidate, diff)
   hosts: juniper_switches
   gather_facts: no
   connection: netconf
@@ -9,15 +9,30 @@
         retrieve: committed
       register: committed
 
-    - name: Buat folder backup di controller
-      delegate_to: localhost
-      file:
-        path: "/home/iass/junos_backup"
-        state: directory
-        mode: '0755'
-
-    - name: Simpan config ke file .txt
+    - name: Save committed config to file
       delegate_to: localhost
       copy:
         content: "{{ committed.ansible_facts.ansible_net_config }}"
-        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.txt"
+        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_committed.txt"
+
+    - name: Get candidate configuration
+      junipernetworks.junos.junos_config:
+        retrieve: candidate
+      register: candidate
+
+    - name: Save candidate config to file
+      delegate_to: localhost
+      copy:
+        content: "{{ candidate.ansible_facts.ansible_net_config }}"
+        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_candidate.txt"
+
+    - name: Get diff between committed and candidate
+      junipernetworks.junos.junos_config:
+        retrieve: diff
+      register: diff
+
+    - name: Save diff to file
+      delegate_to: localhost
+      copy:
+        content: "{{ diff.ansible_facts.ansible_net_config }}"
+        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_diff.txt"
