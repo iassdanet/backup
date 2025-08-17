@@ -1,19 +1,20 @@
 - name: Backup konfigurasi Juniper
   hosts: juniper_switches
   gather_facts: no
-  connection: local
   tasks:
     - name: Set tanggal sekarang
       set_fact:
         today: "{{ lookup('pipe','date +%Y%m%d') }}"
 
-    - name: Buat folder backup
+    - name: Buat folder backup di controller
       file:
         path: "/backup/{{ today }}"
         state: directory
         mode: 0755
+      delegate_to: localhost
+      run_once: true
 
-    - name: Backup konfigurasi Juniper
+    - name: Ambil konfigurasi Juniper
       junipernetworks.junos.junos_config:
         retrieve: "running"
       register: backup_cfg
@@ -22,3 +23,4 @@
       copy:
         content: "{{ backup_cfg['config'] }}"
         dest: "/backup/{{ today }}/{{ inventory_hostname }}_{{ today }}.txt"
+      delegate_to: localhost
