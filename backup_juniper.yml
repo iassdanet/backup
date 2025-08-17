@@ -1,26 +1,31 @@
 ---
-- name: Backup Junos configuration (retrieve committed)
+- name: Junos Automation - Facts & Backup
   hosts: juniper_switches
   gather_facts: no
-  connection: local
+  collections:
+    - junipernetworks.junos
 
   tasks:
-    - name: Buat folder backup per tanggal
-      ansible.builtin.file:
-        path: "backup/{{ inventory_hostname }}/{{ lookup('pipe','date +%Y-%m-%d') }}"
-        state: directory
-        mode: '0755'
+    - name: Retrieve device facts
+      junos_facts:
+      register: device_facts
 
-    - name: Ambil konfigurasi committed
-      junipernetworks.junos.junos_config:
+    - name: Show device facts (debug)
+      debug:
+        var: device_facts
+
+    - name: Retrieve config in 'set' format
+      junos_config:
         retrieve: committed
-      register: config_output
+        format: set
+      register: config_out
 
-    - name: Simpan konfigurasi ke file
-      ansible.builtin.copy:
-        content: "{{ config_output['__ansible_stdout__'] | default(config_output.stdout, true) }}"
-        dest: "backup/{{ inventory_hostname }}/{{ lookup('pipe','date +%Y-%m-%d') }}/config_retrieve.txt"
+    - name: Ensure backup folder exists
+      local_action: file
+        path: "./backups"
+        state: directory
 
-    - name: Debug hasil konfigurasi
-      ansible.builtin.debug:
-        var: config_output
+    - name: Save backup config to file (hostname + date)
+      copy:
+        content: "{{ config_out.config }}"
+        dest: "./backups/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d') }}.conf"
