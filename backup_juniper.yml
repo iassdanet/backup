@@ -1,11 +1,28 @@
 ---
-- name: "Get Junos OS configuration"
+- name: Backup konfigurasi Juniper menggunakan juniper.device.config
   hosts: juniper_switches
-  connection: ansible.netcommon.netconf
   gather_facts: no
+  collections: # PENTING: Mendefinisikan koleksi yang digunakan
+    - juniper.device
+  connection: ansible.netcommon.network_cli
+
+  vars:
+    backup_folder: "./juniper_device_configs_backup"
 
   tasks:
-    - name: "Save configuration to a file"
-      juniper.device.config:
+    - name: Buat folder backup jika belum ada (di localhost)
+      ansible.builtin.file:
+        path: "{{ backup_folder }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+    - name: Ambil konfigurasi dan simpan ke file lokal (menggunakan juniper.device.config)
+      juniper.device.config: # PENTING: Menggunakan FQCN (Fully Qualified Collection Name)
         retrieve: "committed"
-        dest_dir: "{{ playbook_dir }}/configs"
+        dest_dir: "{{ backup_folder }}"
+      register: config_output
+
+    - name: Tampilkan pesan sukses
+      ansible.builtin.debug:
+        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ backup_folder }}"
