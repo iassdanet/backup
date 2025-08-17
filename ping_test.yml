@@ -1,6 +1,6 @@
 ---
 - name: Test Junos connectivity via CLI
-  hosts: juniper_switches
+  hosts: junos
   gather_facts: no
   collections:
     - ansible.netcommon
