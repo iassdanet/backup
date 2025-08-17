@@ -1,16 +1,23 @@
----
-- name: Backup Junos Configuration (manual way)
+- name: Backup Junos Configuration
   hosts: juniper_switches
-  connection: netconf
   gather_facts: no
+  connection: netconf
 
   tasks:
-    - name: Get running config (committed)
-      junipernetworks.junos.junos_command:
-        commands: "show configuration | display set"
-      register: config_out
+    - name: Get committed configuration
+      junipernetworks.junos.junos_config:
+        retrieve: committed
+      register: committed
 
-    - name: Save config to file
+    - name: Buat folder backup di controller
+      delegate_to: localhost
+      file:
+        path: "/home/iass/junos_backup"
+        state: directory
+        mode: '0755'
+
+    - name: Simpan config ke file .txt
+      delegate_to: localhost
       copy:
-        content: "{{ config_out.stdout[0] }}"
-        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_backup.txt"
+        content: "{{ committed.ansible_facts.ansible_net_config }}"
+        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.txt"
