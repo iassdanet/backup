@@ -1,4 +1,3 @@
----
 - name: Backup konfigurasi semua Junos host
   hosts: juniper_switches
   gather_facts: no
