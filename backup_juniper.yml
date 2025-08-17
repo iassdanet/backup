@@ -1,13 +1,17 @@
 ---
-- name: Backup Junos configuration (display set, via local connection)
+- name: Backup Junos configuration (display set)
   hosts: juniper_switches
   gather_facts: no
   connection: local
 
+  vars:
+    backup_root: "./backup"
+    backup_date: "{{ lookup('pipe', 'date +%Y-%m-%d') }}"
+
   tasks:
     - name: Buat folder backup per tanggal
-      ansible.builtin.file:
-        path: "./backup/{{ inventory_hostname }}/{{ lookup('pipe','date +%Y-%m-%d') }}"
+      file:
+        path: "{{ backup_root }}/{{ backup_date }}"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -15,16 +19,15 @@
     - name: Ambil konfigurasi full (display set)
       junipernetworks.junos.junos_command:
         commands:
-          - "show configuration | display set"
-      register: config_out
+          - "show configuration | display set | no-more"
+      register: config
 
-    - name: Simpan hasil backup ke file .txt
-      ansible.builtin.copy:
-        content: "{{ config_out.stdout[0] }}"
-        dest: "./backup/{{ inventory_hostname }}/{{ lookup('pipe','date +%Y-%m-%d') }}/running_config.txt"
+    - name: Simpan hasil konfigurasi ke file
+      copy:
+        content: "{{ config.stdout[0] }}"
+        dest: "{{ backup_root }}/{{ backup_date }}/{{ inventory_hostname }}.set"
       delegate_to: localhost
 
-    - name: Debug kalau sukses
-      ansible.builtin.debug:
-        msg: "Backup sukses disimpan di ./backup/{{ inventory_hostname }}/{{ lookup('pipe','date +%Y-%m-%d') }}/running_config.txt"
-      delegate_to: localhost
+    - name: Debug path file backup
+      debug:
+        msg: "Backup tersimpan di {{ backup_root }}/{{ backup_date }}/{{ inventory_hostname }}.set"
