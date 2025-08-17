@@ -3,13 +3,13 @@
   hosts: juniper_switches
   gather_facts: false
 
-  tasks:
-    - name: Menjalankan perintah show configuration
+  tasks: ## tugasnya ngapain aja
+    - name: show configuration ##ini buat command nya
       junipernetworks.junos.junos_cli:
         command: "show configuration | display set"
       register: junos_config_cli
 
-    - name: Menyimpan konfigurasi dalam format teks
+    - name: save.txt ##ini buat ngesave nya di bentuk txt
       ansible.builtin.copy:
         content: "{{ junos_config_cli.stdout }}"
         dest: "backup/{{ inventory_hostname }}.txt"
