@@ -4,14 +4,20 @@
   gather_facts: no
 
   tasks:
-    - name: Ambil konfigurasi via RPC
-      junipernetworks.junos.junos_rpc:
-        rpc: get-config
-        output: text
-      register: config
+    - name: Backup konfigurasi aktif
+      junipernetworks.junos.junos_config:
+        backup: yes
+      register: backup_out
 
-    - name: Simpan hasil konfigurasi
-      copy:
-        content: "{{ config.stdout[0] }}"
-        dest: "backup/{{ inventory_hostname }}.txt"
+    - name: Buat folder backup di localhost
+      ansible.builtin.file:
+        path: backup
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+    - name: Simpan hasil backup dengan timestamp
+      ansible.builtin.copy:
+        content: "{{ backup_out.backup_path | default('') | ansible.builtin.slurp }}"
+        dest: "backup/{{ inventory_hostname }}-{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.conf"
       delegate_to: localhost
