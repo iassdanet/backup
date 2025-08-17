@@ -1,40 +1,16 @@
 ---
-- name: Backup konfigurasi Juniper menggunakan juniper.device.config
-  hosts: juniper_switches
-  gather_facts: no
-  # Penting: Pastikan koneksi ini didefinisikan juga di inventory host Anda
-  # juniper.device.config mendukung network_cli
-  connection: ansible.netcommon.network_cli # Modul ini biasanya bekerja baik dengan network_cli
-
-  vars:
-    backup_folder: "./backup_configs_juniper_device"
-
-  pre_tasks:
-    # Instalasi koleksi juniper.device (jika belum)
-    - name: Pastikan koleksi juniper.device terinstal
-      ansible.builtin.galaxy:
-        collection_name: juniper.device
-        state: present
-      delegate_to: localhost
+- name: Backup Junos configurations
+  hosts: juniper_switches # Replace with your inventory group for Junos devices
+  connection: local
+  gather_facts: false
 
   tasks:
-    # Indentasi ini sangat penting! Setiap level harus konsisten menggunakan spasi.
-    - name: Buat folder backup jika belum ada (di localhost)
-      ansible.builtin.file:
-        path: "{{ backup_folder }}"
-        state: directory
-        mode: '0755'
-      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
+    - name: Retrieve and save configuration
+      junipernetworks.junos.junos_config:
+        retrieve: config
+        dest: "./backups/{{ inventory_hostname }}_config.conf" # Path to save the backup
+      register: junos_backup_result
 
-    - name: Ambil konfigurasi dan simpan ke file lokal
-      juniper.device.config:
-        retrieve: "committed" # Ambil konfigurasi yang sudah di-commit
-        dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
-        # return_output: false # Opsional: Jika tidak ingin output konfigurasi di register
-      register: config_output # Anda masih bisa mendaftarkan output untuk melihat metadata
-
-    - name: Tampilkan pesan sukses
-      ansible.builtin.debug:
-        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ config_output.dest }}"
-        # Anda bisa melihat output penuh jika return_output tidak disetel ke false
-        # var: config_output
+    - name: Display backup status
+      debug:
+        msg: "Backup for {{ inventory_hostname }} completed
