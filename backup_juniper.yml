@@ -1,18 +1,31 @@
 ---
-- name: backup config
+- name: Backup konfigurasi semua Junos host
   hosts: juniper_switches
   gather_facts: no
   collections:
-    - ansible.netcommon
+    - junipernetworks.junos
 
- tasks:
-    - name: Menjalankan perintah show configuration
-      junipernetworks.junos.junos_cli:
-        command: "show configuration | display set"
-      register: junos_config_cli
+  vars:
+    backup_folder: "./backup_configs"
 
-    - name: Menyimpan konfigurasi dalam format teks
-      ansible.builtin.copy:
-        content: "{{ junos_config_cli.stdout }}"
-        dest: "backup/{{ inventory_hostname }}.txt"
-      delegate_to: localhost
+  tasks:
+    - name: Buat folder backup jika belum ada
+      file:
+        path: "{{ backup_folder }}"
+        state: directory
+        mode: '0755'
+
+    - name: Ambil konfigurasi perangkat
+      junos_config:
+        retrieve: config
+        format: text   # Bisa juga xml atau set
+      register: config_backup
+
+    - name: Simpan konfigurasi ke file lokal
+      copy:
+        content: "{{ config_backup.config }}"
+        dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
+
+    - name: Tampilkan pesan sukses
+      debug:
+        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ backup_folder }}"
