@@ -24,10 +24,9 @@
       register: config_output
 
     - name: Simpan konfigurasi ke file permanen
-      ansible.builtin.file:
-        path: "{{ file_path }}"
+      ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        mode: '0644'
+        dest: "{{ file_path }}"
       delegate_to: localhost
 
     - name: Verifikasi file dibuat
