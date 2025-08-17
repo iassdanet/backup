@@ -1,13 +1,16 @@
 ---
-- name: Backup Junos Configuration
+- name: Backup Junos Configuration (manual way)
   hosts: juniper_switches
   connection: netconf
   gather_facts: no
 
   tasks:
-    - name: Backup current committed config
-      junipernetworks.junos.junos_config:
-        backup: true
-        backup_options:
-          filename: "{{ inventory_hostname }}_backup.txt"
-          dir_path: "/home/iass/junos_backup"
+    - name: Get running config (committed)
+      junipernetworks.junos.junos_command:
+        commands: "show configuration | display set"
+      register: config_out
+
+    - name: Save config to file
+      copy:
+        content: "{{ config_out.stdout[0] }}"
+        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_backup.txt"
