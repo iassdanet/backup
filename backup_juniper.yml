@@ -4,7 +4,7 @@
   gather_facts: no
   collections:
     - junipernetworks.junos
-  # Ini adalah jenis koneksi yang tepat untuk junos_config
+  # Penting: Pastikan koneksi ini didefinisikan juga di inventory host Anda
   connection: ansible.netcommon.netconf
 
   vars:
@@ -15,7 +15,7 @@
       ansible.builtin.pip:
         name: ncclient
         state: present
-      delegate_to: localhost # Pastikan ini dijalankan di control node Ansible
+      delegate_to: localhost
 
   tasks:
     - name: Buat folder backup jika belum ada (di localhost)
@@ -23,19 +23,20 @@
         path: "{{ backup_folder }}"
         state: directory
         mode: '0755'
-      delegate_to: localhost # Penting: Pastikan ini dijalankan di mesin lokal Ansible
+      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
 
     - name: Ambil konfigurasi perangkat (via NETCONF)
+      # Modul junos_config membutuhkan koneksi netconf
       junipernetworks.junos.junos_config:
         retrieve: config
-        format: text # Bisa juga 'set' untuk format yang lebih mudah dibaca/digunakan kembali
+        format: text # Atau 'set' jika Anda ingin format set
       register: config_backup
 
     - name: Simpan konfigurasi ke file lokal (di localhost)
       ansible.builtin.copy:
         content: "{{ config_backup.config }}"
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
-      delegate_to: localhost # Penting: Pastikan ini dijalankan di mesin lokal Ansible
+      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
 
     - name: Tampilkan pesan sukses
       ansible.builtin.debug:
