@@ -16,16 +16,17 @@
         commands: show configuration
       register: config_output
 
-    - name: Debug full config_output
-      debug:
-        var: config_output
+    - name: Create empty backup file first
+      file:
+        path: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
+        state: touch
+      delegate_to: localhost
 
-    - name: Save config to file on Ansible host
-      ansible.builtin.copy:
-        content: "{{ config_output.stdout[0] | default('NO OUTPUT') }}"
+    - name: Write config output into file
+      copy:
+        content: "{{ config_output.stdout[0] }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
       delegate_to: localhost
-      run_once: false
       register: save_result
 
     - name: Debug confirm file saved
