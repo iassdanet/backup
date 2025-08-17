@@ -5,8 +5,7 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Lokasi hasil backup (di server AWX, bukan di GitHub)
-    backup_dir: "/var/lib/awx/projects/{{ awx_project_name }}/backup"
+    backup_dir: "/var/lib/awx/projects/_14__backup_stdt/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
 
   tasks:
