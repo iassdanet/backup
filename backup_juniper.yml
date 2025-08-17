@@ -1,39 +1,13 @@
 ---
-- name: Retrieve Junos configuration (committed, candidate, diff)
+- name: Backup Junos Configuration
   hosts: juniper_switches
   connection: netconf
   gather_facts: no
 
   tasks:
-    - name: Get committed configuration
-      junipernetworks.junos.junos_facts:
-        gather_subset:
-          - config
-      register: committed
-
-    - name: Show committed config
-      debug:
-        var: committed.ansible_facts.ansible_net_config
-
-    - name: Get candidate configuration
-      junipernetworks.junos.junos_rpc:
-        rpc: get-config
-        kwargs:
-          database: candidate
-      register: candidate
-
-    - name: Show candidate config (xml/json depending on rpc output)
-      debug:
-        var: candidate.parsed_output
-
-    - name: Compare candidate vs committed (diff)
-      junipernetworks.junos.junos_rpc:
-        rpc: get-configuration
-        kwargs:
-          compare: rollback
-          rollback: 0
-      register: diff
-
-    - name: Show diff output
-      debug:
-        var: diff.parsed_output
+    - name: Backup current committed config
+      junipernetworks.junos.junos_config:
+        backup: true
+        backup_options:
+          filename: "{{ inventory_hostname }}_backup.txt"
+          dir_path: "/home/iass/junos_backup"
