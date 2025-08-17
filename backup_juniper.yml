@@ -1,26 +1,39 @@
-- name: Backup konfigurasi Juniper
+---
+- name: Retrieve Junos configuration (committed, candidate, diff)
   hosts: juniper_switches
+  connection: netconf
   gather_facts: no
+
   tasks:
-    - name: Set tanggal sekarang
-      set_fact:
-        today: "{{ lookup('pipe','date +%Y%m%d') }}"
+    - name: Get committed configuration
+      junipernetworks.junos.junos_facts:
+        gather_subset:
+          - config
+      register: committed
 
-    - name: Buat folder backup di controller
-      file:
-        path: "/backup/{{ today }}"
-        state: directory
-        mode: 0755
-      delegate_to: localhost
-      run_once: true
+    - name: Show committed config
+      debug:
+        var: committed.ansible_facts.ansible_net_config
 
-    - name: Ambil konfigurasi Juniper
-      junipernetworks.junos.junos_config:
-        retrieve: "running"
-      register: backup_cfg
+    - name: Get candidate configuration
+      junipernetworks.junos.junos_rpc:
+        rpc: get-config
+        kwargs:
+          database: candidate
+      register: candidate
 
-    - name: Simpan konfigurasi ke file .txt
-      copy:
-        content: "{{ backup_cfg['config'] }}"
-        dest: "/backup/{{ today }}/{{ inventory_hostname }}_{{ today }}.txt"
-      delegate_to: localhost
+    - name: Show candidate config (xml/json depending on rpc output)
+      debug:
+        var: candidate.parsed_output
+
+    - name: Compare candidate vs committed (diff)
+      junipernetworks.junos.junos_rpc:
+        rpc: get-configuration
+        kwargs:
+          compare: rollback
+          rollback: 0
+      register: diff
+
+    - name: Show diff output
+      debug:
+        var: diff.parsed_output
