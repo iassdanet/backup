@@ -9,12 +9,15 @@
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
 
   tasks:
-    - name: Pastikan folder backup ada
+    - name: Pastikan folder backup ada (lokal, di pod AWX)
       file:
         path: "{{ backup_dir }}"
         state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
 
-    - name: Ambil konfigurasi aktif
+    - name: Ambil konfigurasi aktif dari switch
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
@@ -23,10 +26,11 @@
       set_fact:
         safe_hostname: "{{ inventory_hostname | replace(' ', '_') }}"
 
-    - name: Simpan konfigurasi ke file unik (hostname + timestamp)
+    - name: Simpan konfigurasi ke file unik (hostname + timestamp, di AWX pod)
       copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_dir }}/{{ safe_hostname }}_{{ timestamp }}.txt"
+      delegate_to: localhost
 
     - name: Debug - konfirmasi path hasil backup
       debug:
