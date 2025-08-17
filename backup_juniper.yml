@@ -17,28 +17,26 @@
       delegate_to: localhost
 
   tasks:
+    # Perhatikan indentasi untuk setiap tugas dan sub-parameternya.
+    # Selalu gunakan spasi, bukan tab, dan konsisten.
     - name: Buat folder backup jika belum ada (di localhost)
       ansible.builtin.file:
         path: "{{ backup_folder }}"
         state: directory
         mode: '0755'
-      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
+      delegate_to: localhost
 
     - name: Ambil konfigurasi perangkat (via NETCONF dan backup: yes)
       junipernetworks.junos.junos_config:
-        backup: yes # <<< Parameter yang benar untuk backup konfigurasi
-        # Parameter format dan retrieve tidak digunakan di sini untuk backup
+        backup: yes # Parameter yang benar untuk backup konfigurasi
       register: config_backup
 
     - name: Simpan konfigurasi ke file lokal (di localhost)
-      # Output dari backup: yes ada di config_backup.backup_path
       ansible.builtin.copy:
-        # Modul junos_config dengan backup: yes akan menyimpan path file di .backup_path
-        # Konten file akan langsung disalin dari path tersebut
         src: "{{ config_backup.backup_path }}"
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
-        remote_src: yes # Penting: Beritahu Ansible bahwa sumber file ada di remote (perangkat Juniper)
-      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
+        remote_src: yes
+      delegate_to: localhost
 
     - name: Tampilkan pesan sukses
       ansible.builtin.debug:
