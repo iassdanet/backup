@@ -20,16 +20,19 @@
         commands: show configuration
       register: config_output
 
-    - name: Debug - show config output
+    - name: Debug - full config_output
       debug:
         var: config_output
 
-    - name: Save config to file on Ansible host
-      copy:
-        content: "{{ config_output.stdout[0] }}"
+    - name: Debug - show only stdout
+      debug:
+        msg: "{{ config_output.stdout }}"
+
+    - name: Save config to file (local)
+      local_action:
+        module: copy
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
-      delegate_to: localhost
-      run_once: false
       register: save_result
 
     - name: Debug - confirm file saved
