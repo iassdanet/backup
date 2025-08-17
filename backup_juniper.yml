@@ -5,10 +5,12 @@
   connection: ansible.netcommon.netconf
 
   tasks:
-    - name: Ensure backup directory exists
+    - name: Ensure backup directory exists (local)
+      delegate_to: localhost
       file:
         path: /home/iass/awx-deploy/backup
         state: directory
+      run_once: true
       register: backup_dir
 
     - name: Debug - backup directory created
@@ -24,13 +26,9 @@
       debug:
         var: config_output
 
-    - name: Debug - show only stdout
-      debug:
-        msg: "{{ config_output.stdout }}"
-
-    - name: Save config to file (local)
-      local_action:
-        module: copy
+    - name: Save config directly on controller
+      delegate_to: localhost
+      copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
       register: save_result
