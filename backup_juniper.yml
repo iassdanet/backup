@@ -5,15 +5,13 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Menggunakan jalur relatif yang pasti bisa diakses
-    # Ini akan membuat folder 'junos_backups' satu tingkat di atas direktori proyek
     backup_dir: "../junos_backups"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
     - name: Pastikan folder backup ada
-      file:
+      ansible.builtin.file:
         path: "{{ backup_dir }}"
         state: directory
         mode: '0755'
@@ -26,18 +24,20 @@
       register: config_output
 
     - name: Simpan konfigurasi ke file permanen
-      copy:
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+      ansible.builtin.template:
+        src: ../junos_backups_template.j2
         dest: "{{ file_path }}"
+      vars:
+        config_text: "{{ config_output.stdout[0] }}"
       delegate_to: localhost
 
     - name: Verifikasi file dibuat
-      stat:
+      ansible.builtin.stat:
         path: "{{ file_path }}"
       register: file_check
       delegate_to: localhost
 
     - name: Debug - Tampilkan hasil verifikasi
-      debug:
+      ansible.builtin.debug:
         msg: "File {{ file_path }} ada: {{ file_check.stat.exists }}"
       delegate_to: localhost
