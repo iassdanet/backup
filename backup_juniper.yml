@@ -4,15 +4,13 @@
   gather_facts: false
 
   tasks:
-    - name: Mengambil konfigurasi aktif
-      # BARIS INI HARUS PERSIS SEPERTI INI DI GITHUB:
-      junipernetworks.junos.junos_rpc:
-        rpc: "get-config"
-        format: xml
-      register: junos_config_xml
+    - name: Menjalankan perintah show configuration
+      junipernetworks.junos.junos_cli:
+        command: "show configuration | display set"
+      register: junos_config_cli
 
-    - name: Menyimpan konfigurasi dalam format XML
+    - name: Menyimpan konfigurasi dalam format teks
       ansible.builtin.copy:
-        content: "{{ junos_config_xml.xml_config }}"
-        dest: "backup/{{ inventory_hostname }}.xml"
+        content: "{{ junos_config_cli.stdout }}"
+        dest: "backup/{{ inventory_hostname }}.txt"
       delegate_to: localhost
