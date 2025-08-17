@@ -10,29 +10,20 @@
         path: /home/iass/awx-deploy/backup
         state: directory
       delegate_to: localhost
-      run_once: true
-      register: backup_dir
-
-    - name: Debug - backup directory created
-      debug:
-        var: backup_dir
 
     - name: Get committed config (show configuration)
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
-    - name: Debug - full config_output
-      debug:
-        var: config_output
+    - name: Create empty txt file (local)
+      file:
+        path: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
+        state: touch
+      delegate_to: localhost
 
-    - name: Save config to file (local)
-      local_action:
-        module: copy
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+    - name: Save config to file (local .txt)
+      copy:
+        content: "{{ config_output.stdout[0] }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
-      register: save_result
-
-    - name: Debug - confirm file saved
-      debug:
-        var: save_result
+      delegate_to: localhost
