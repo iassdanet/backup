@@ -1,38 +1,15 @@
-- name: Retrieve Junos configuration (committed, candidate, diff)
-  hosts: juniper_switches
+- name: Backup Junos configuration
+  hosts: juniper+switches
+  connection: ansible.netcommon.netconf
   gather_facts: no
-  connection: netconf
 
   tasks:
-    - name: Get committed configuration
-      junipernetworks.junos.junos_config:
-        retrieve: committed
-      register: committed
+    - name: Get committed config (show configuration)
+      junipernetworks.junos.junos_command:
+        commands: show configuration
+      register: config_output
 
-    - name: Save committed config to file
-      delegate_to: localhost
+    - name: Save config to file
       copy:
-        content: "{{ committed.ansible_facts.ansible_net_config }}"
-        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_committed.txt"
-
-    - name: Get candidate configuration
-      junipernetworks.junos.junos_config:
-        retrieve: candidate
-      register: candidate
-
-    - name: Save candidate config to file
-      delegate_to: localhost
-      copy:
-        content: "{{ candidate.ansible_facts.ansible_net_config }}"
-        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_candidate.txt"
-
-    - name: Get diff between committed and candidate
-      junipernetworks.junos.junos_config:
-        retrieve: diff
-      register: diff
-
-    - name: Save diff to file
-      delegate_to: localhost
-      copy:
-        content: "{{ diff.ansible_facts.ansible_net_config }}"
-        dest: "/home/iass/junos_backup/{{ inventory_hostname }}_diff.txt"
+        content: "{{ config_output.stdout[0] }}"
+        dest: "backup/{{ inventory_hostname }}.txt"
