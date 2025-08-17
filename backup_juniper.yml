@@ -2,8 +2,8 @@
 - name: Backup konfigurasi Juniper menggunakan juniper.device.config
   hosts: juniper_switches
   gather_facts: no
-  collections: # PENTING: Mendefinisikan koleksi yang digunakan
-    - juniper.device
+  collections: # Pastikan ini diindentasi dengan benar (2 spasi dari kiri)
+    - juniper.device # Pastikan ini diindentasi dengan benar (2 spasi dari 'collections:')
   connection: ansible.netcommon.network_cli
 
   vars:
@@ -18,7 +18,7 @@
       delegate_to: localhost
 
     - name: Ambil konfigurasi dan simpan ke file lokal (menggunakan juniper.device.config)
-      juniper.device.config: # PENTING: Menggunakan FQCN (Fully Qualified Collection Name)
+      juniper.device.config: # Pastikan ini diindentasi dengan benar
         retrieve: "committed"
         dest_dir: "{{ backup_folder }}"
       register: config_output
