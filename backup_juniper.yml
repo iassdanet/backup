@@ -4,36 +4,30 @@
   gather_facts: no
   connection: ansible.netcommon.netconf
 
-  tasks:
-    - name: Ensure backup directory exists (local)
-      file:
-        path: /home/iass/awx-deploy/backup
-        state: directory
-      delegate_to: localhost
-      run_once: true
+  vars:
+    backup_dir: "/var/lib/awx/projects/_8__backup_stdt/backup"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
 
-    - name: Get committed config (show configuration)
+  tasks:
+    - name: Pastikan folder backup ada
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+
+    - name: Ambil konfigurasi aktif
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
-    - name: Sanitize hostname (replace spaces with underscores)
+    - name: Normalisasi hostname
       set_fact:
         safe_hostname: "{{ inventory_hostname | replace(' ', '_') }}"
 
-    - name: Create empty file first (touch)
-      file:
-        path: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
-        state: touch
-      delegate_to: localhost
-
-    - name: Save config to file (local)
+    - name: Simpan konfigurasi ke file unik (hostname + timestamp)
       copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
-      delegate_to: localhost
-      register: save_result
+        dest: "{{ backup_dir }}/{{ safe_hostname }}_{{ timestamp }}.txt"
 
-    - name: Debug - confirm full path of saved file
+    - name: Debug - konfirmasi path hasil backup
       debug:
-        msg: "Configuration saved at {{ save_result.dest }}"
+        msg: "Config {{ safe_hostname }} disimpan di {{ backup_dir }}/{{ safe_hostname }}_{{ timestamp }}.txt"
