@@ -9,13 +9,27 @@
       file:
         path: backup
         state: directory
+      register: backup_dir
+
+    - name: Debug - backup directory created
+      debug:
+        var: backup_dir
 
     - name: Get committed config (show configuration)
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
+    - name: Debug - show config output
+      debug:
+        msg: "{{ config_output.stdout[0] }}"
+
     - name: Save config to file
       copy:
         content: "{{ config_output.stdout[0] }}"
         dest: "backup/{{ inventory_hostname }}.txt"
+      register: save_result
+
+    - name: Debug - confirm file saved
+      debug:
+        msg: "Configuration saved to backup/{{ inventory_hostname }}.txt"
