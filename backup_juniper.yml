@@ -22,14 +22,16 @@
 
     - name: Debug - show config output
       debug:
-        msg: "{{ config_output.stdout[0] }}"
+        var: config_output
 
-    - name: Save config to file
+    - name: Save config to file on Ansible host
       copy:
         content: "{{ config_output.stdout[0] }}"
         dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
+      delegate_to: localhost
+      run_once: false
       register: save_result
 
     - name: Debug - confirm file saved
       debug:
-        msg: "Configuration saved to /home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
+        var: save_result
