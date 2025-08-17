@@ -1,8 +1,6 @@
 - name: Backup Junos configuration
   hosts: juniper_switches
-  connection: ansible.netcommon.netconf
   gather_facts: no
-
   tasks:
     - name: Ensure backup directory exists
       file:
