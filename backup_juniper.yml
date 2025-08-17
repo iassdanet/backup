@@ -22,6 +22,10 @@
         format: text
       register: running_config
 
+    - name: Debug isi config (cek sukses/tidak)
+      ansible.builtin.debug:
+        var: running_config['config']
+
     - name: Simpan konfigurasi ke file lokal (.txt)
       ansible.builtin.copy:
         content: "{{ running_config['config'] }}"
