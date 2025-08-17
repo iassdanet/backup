@@ -20,12 +20,12 @@
     - name: Ambil konfigurasi aktif dari perangkat Juniper
       junipernetworks.junos.junos_rpc:
         rpc: get-configuration # Menggunakan RPC standar untuk mengambil konfigurasi
-        format: text # Format output: text, xml, atau set
+        # Parameter 'format' TIDAK didukung oleh modul junos_rpc, jadi dihapus.
       register: junos_config_output # Output konfigurasi akan disimpan di sini
 
     - name: Simpan konfigurasi ke file backup di komputer lokal
       ansible.builtin.copy:
-        # Isi file diambil dari output RPC (stdout[0] berisi teks konfigurasi)
+        # Isi file diambil dari output RPC (stdout[0] berisi teks konfigurasi, biasanya XML)
         content: "{{ junos_config_output.stdout[0] }}"
         # Nama file unik dengan hostname dan timestamp
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
