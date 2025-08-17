@@ -4,21 +4,14 @@
   gather_facts: no
 
   tasks:
-    - name: Ambil konfigurasi aktif
-      junipernetworks.junos.junos_command:
-        # Perintah ini sebaiknya diubah menjadi list atau gunakan junos_rpc untuk keandalan lebih
-        commands: "show configuration | display set"
+    - name: Ambil konfigurasi via RPC
+      junipernetworks.junos.junos_rpc:
+        rpc: get-config
+        output: text
       register: config
 
-    - name: Buat folder backup di localhost
-      ansible.builtin.file:
-        path: backup
-        state: directory
-        mode: '0755'
-      delegate_to: localhost
-
-    - name: Simpan hasil konfigurasi dengan timestamp
-      ansible.builtin.copy:
+    - name: Simpan hasil konfigurasi
+      copy:
         content: "{{ config.stdout[0] }}"
-        dest: "backup/{{ inventory_hostname }}-{{ lookup('pipe','date +%Y%m%d_%H%M%S') }}.txt"
+        dest: "backup/{{ inventory_hostname }}.txt"
       delegate_to: localhost
