@@ -1,8 +1,15 @@
 ---
-- name: Test connectivity with ping module
-  hosts: all
-  gather_facts: false
-  
+- name: Test Junos connectivity
+  hosts: junos
+  gather_facts: no
+  collections:
+    - junipernetworks.junos
+
   tasks:
-    - name: Ping all hosts
-      ansible.builtin.ping:
+    - name: Get Junos facts
+      junipernetworks.junos.junos_facts:
+      register: facts
+
+    - name: Show Junos version
+      debug:
+        msg: "Hostname: {{ facts.ansible_facts.ansible_net_hostname }} - Version: {{ facts.ansible_facts.ansible_net_version }}"
