@@ -2,7 +2,8 @@
 - name: Backup Konfigurasi Switch Juniper
   hosts: juniper_switches
   gather_facts: false
-
+  connection: netconf
+  
   tasks: ## tugasnya ngapain aja
     - name: show configuration ##ini buat command nya
       junipernetworks.junos.junos_cli:
