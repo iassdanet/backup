@@ -6,7 +6,7 @@
 
   vars:
     backup_root: "./backup"
-    backup_date: "{{ ansible_date_time.date }}"
+    backup_date: "{{ lookup('pipe','date +%Y-%m-%d') }}"
     backup_dir: "{{ backup_root }}/{{ backup_date }}"
 
   tasks:
