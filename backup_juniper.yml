@@ -1,6 +1,6 @@
 ---
 - name: Backup konfigurasi Juniper via NETCONF
-  hosts: junos
+  hosts: juniper_switches
   connection: ansible.netcommon.netconf
   gather_facts: no
 
