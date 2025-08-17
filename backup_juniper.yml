@@ -5,15 +5,17 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Menggunakan jalur yang Anda inginkan
-    backup_dir: "/home/iass/awx-deploy/backup"
+    # Menggunakan jalur sementara di dalam pod
+    pod_temp_dir: "/tmp/backup"
+    host_final_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
+    file_path_pod: "{{ pod_temp_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
+    file_path_host: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    - name: Pastikan folder backup ada
+    - name: Pastikan folder sementara di pod ada
       ansible.builtin.file:
-        path: "{{ backup_dir }}"
+        path: "{{ pod_temp_dir }}"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -24,19 +26,14 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi ke file permanen
+    - name: Simpan konfigurasi ke file di dalam pod
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ file_path }}"
+        dest: "{{ file_path_pod }}"
       delegate_to: localhost
 
-    - name: Verifikasi file dibuat
-      ansible.builtin.stat:
-        path: "{{ file_path }}"
-      register: file_check
-      delegate_to: localhost
-
-    - name: Debug - Tampilkan hasil verifikasi
-      ansible.builtin.debug:
-        msg: "File {{ file_path }} ada: {{ file_check.stat.exists }}"
+    - name: Salin file dari pod ke host
+      ansible.builtin.shell: |
+        POD_NAME=$(kubectl get pods -n awx -o=jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | grep 'awx-web' | head -n 1)
+        kubectl cp "{{ POD_NAME }}:{{ file_path_pod }}" "{{ file_path_host }}"
       delegate_to: localhost
