@@ -1,24 +1,24 @@
----
 - name: Backup konfigurasi Juniper
   hosts: juniper_switches
   gather_facts: no
   connection: local
-
   tasks:
-    - name: Buat folder backup dengan tanggal
+    - name: Set tanggal sekarang
+      set_fact:
+        today: "{{ lookup('pipe','date +%Y%m%d') }}"
+
+    - name: Buat folder backup
       file:
-        path: "backup/{{ ansible_date_time.date }}"
+        path: "/backup/{{ today }}"
         state: directory
-        mode: '0755'
+        mode: 0755
 
-    - name: Ambil konfigurasi committed
-      junipernetworks.junos.junos_facts:
-        gather_subset:
-          - config
-        config_format: text
-      register: hasil_config
+    - name: Backup konfigurasi Juniper
+      junipernetworks.junos.junos_config:
+        retrieve: "running"
+      register: backup_cfg
 
-    - name: Simpan konfigurasi ke file
+    - name: Simpan konfigurasi ke file .txt
       copy:
-        content: "{{ hasil_config.ansible_facts.config }}"
-        dest: "backup/{{ ansible_date_time.date }}/{{ inventory_hostname }}.conf"
+        content: "{{ backup_cfg['config'] }}"
+        dest: "/backup/{{ today }}/{{ inventory_hostname }}_{{ today }}.txt"
