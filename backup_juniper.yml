@@ -4,6 +4,11 @@
   gather_facts: no
 
   tasks:
+    - name: Ensure backup directory exists
+      file:
+        path: backup
+        state: directory
+
     - name: Get committed config (show configuration)
       junipernetworks.junos.junos_command:
         commands: show configuration
