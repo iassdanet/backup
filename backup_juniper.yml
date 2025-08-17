@@ -1,6 +1,6 @@
 ---
 - name: Backup konfigurasi Juniper via NETCONF
-  hosts: juniper_switches
+  hosts: junos
   connection: ansible.netcommon.netconf
   gather_facts: no
 
@@ -16,21 +16,14 @@
         state: directory
       delegate_to: localhost
 
-    - name: Ambil konfigurasi aktif (candidate config)
+    - name: Ambil konfigurasi aktif (running config)
       junipernetworks.junos.junos_config:
-        retrieve: candidate
+        retrieve: running
         format: text
       register: running_config
 
-    - name: Simpan konfigurasi ke file lokal
+    - name: Simpan konfigurasi ke file lokal (.txt)
       ansible.builtin.copy:
         content: "{{ running_config['config'] }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}.conf"
-      delegate_to: localhost
-
-    - name: Kompres hasil backup jadi tar.gz
-      ansible.builtin.archive:
-        path: "{{ backup_dir }}"
-        dest: "{{ backup_root }}/juniper-backup-{{ backup_date }}.tar.gz"
-        format: gz
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}-{{ backup_date }}.txt"
       delegate_to: localhost
