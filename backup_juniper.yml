@@ -9,8 +9,8 @@
       file:
         path: /home/iass/awx-deploy/backup
         state: directory
-        mode: '0755'
       delegate_to: localhost
+      run_once: true
 
     - name: Get committed config (show configuration)
       junipernetworks.junos.junos_command:
@@ -29,11 +29,11 @@
 
     - name: Save config to file (local)
       copy:
-        content: "{{ config_output.stdout[0] | default('NO CONFIG RETURNED') }}"
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
       delegate_to: localhost
       register: save_result
 
-    - name: Debug - confirm file saved
+    - name: Debug - confirm full path of saved file
       debug:
-        msg: "Configuration saved to /home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
+        msg: "Configuration saved at {{ save_result.dest }}"
