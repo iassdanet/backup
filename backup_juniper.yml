@@ -1,43 +1,40 @@
 ---
-- name: Backup konfigurasi semua Junos host
+- name: Backup konfigurasi Juniper menggunakan juniper.device.config
   hosts: juniper_switches
   gather_facts: no
-  collections:
-    - junipernetworks.junos
-  connection: ansible.netcommon.netconf # Pastikan ini juga di inventory host Anda
+  # Penting: Pastikan koneksi ini didefinisikan juga di inventory host Anda
+  # juniper.device.config mendukung network_cli
+  connection: ansible.netcommon.network_cli # Modul ini biasanya bekerja baik dengan network_cli
 
   vars:
-    backup_folder: "./backup_configs"
+    backup_folder: "./backup_configs_juniper_device"
 
   pre_tasks:
-    - name: Pastikan ncclient terinstal (diperlukan untuk koneksi NETCONF)
-      ansible.builtin.pip:
-        name: ncclient
+    # Instalasi koleksi juniper.device (jika belum)
+    - name: Pastikan koleksi juniper.device terinstal
+      ansible.builtin.galaxy:
+        collection_name: juniper.device
         state: present
       delegate_to: localhost
 
   tasks:
-    # Perhatikan indentasi untuk setiap tugas dan sub-parameternya.
-    # Selalu gunakan spasi, bukan tab, dan konsisten.
+    # Indentasi ini sangat penting! Setiap level harus konsisten menggunakan spasi.
     - name: Buat folder backup jika belum ada (di localhost)
       ansible.builtin.file:
         path: "{{ backup_folder }}"
         state: directory
         mode: '0755'
-      delegate_to: localhost
+      delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
 
-    - name: Ambil konfigurasi perangkat (via NETCONF dan backup: yes)
-      junipernetworks.junos.junos_config:
-        backup: yes # Parameter yang benar untuk backup konfigurasi
-      register: config_backup
-
-    - name: Simpan konfigurasi ke file lokal (di localhost)
-      ansible.builtin.copy:
-        src: "{{ config_backup.backup_path }}"
+    - name: Ambil konfigurasi dan simpan ke file lokal
+      juniper.device.config:
+        retrieve: "committed" # Ambil konfigurasi yang sudah di-commit
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
-        remote_src: yes
-      delegate_to: localhost
+        # return_output: false # Opsional: Jika tidak ingin output konfigurasi di register
+      register: config_output # Anda masih bisa mendaftarkan output untuk melihat metadata
 
     - name: Tampilkan pesan sukses
       ansible.builtin.debug:
-        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ backup_folder }}"
+        msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ config_output.dest }}"
+        # Anda bisa melihat output penuh jika return_output tidak disetel ke false
+        # var: config_output
