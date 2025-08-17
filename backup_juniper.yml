@@ -9,6 +9,7 @@
       file:
         path: /home/iass/awx-deploy/backup
         state: directory
+        mode: '0755'
       delegate_to: localhost
 
     - name: Get committed config (show configuration)
@@ -18,15 +19,21 @@
 
     - name: Sanitize hostname (replace spaces with underscores)
       set_fact:
-        safe_hostname: "{{ inventory_hostname | regex_replace(' ', '_') }}"
+        safe_hostname: "{{ inventory_hostname | replace(' ', '_') }}"
+
+    - name: Create empty file first (touch)
+      file:
+        path: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
+        state: touch
+      delegate_to: localhost
 
     - name: Save config to file (local)
       copy:
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        content: "{{ config_output.stdout[0] | default('NO CONFIG RETURNED') }}"
         dest: "/home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
       delegate_to: localhost
       register: save_result
 
     - name: Debug - confirm file saved
       debug:
-        var: save_result
+        msg: "Configuration saved to /home/iass/awx-deploy/backup/{{ safe_hostname }}.txt"
