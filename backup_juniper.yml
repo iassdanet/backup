@@ -4,8 +4,7 @@
   gather_facts: no
   collections:
     - junipernetworks.junos
-  # Penting: Pastikan koneksi ini didefinisikan juga di inventory host Anda
-  connection: ansible.netcommon.netconf
+  connection: ansible.netcommon.netconf # Pastikan ini juga di inventory host Anda
 
   vars:
     backup_folder: "./backup_configs"
@@ -25,17 +24,20 @@
         mode: '0755'
       delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
 
-    - name: Ambil konfigurasi perangkat (via NETCONF)
-      # Modul junos_config membutuhkan koneksi netconf
+    - name: Ambil konfigurasi perangkat (via NETCONF dan backup: yes)
       junipernetworks.junos.junos_config:
-        retrieve: config
-        format: text # Atau 'set' jika Anda ingin format set
+        backup: yes # <<< Parameter yang benar untuk backup konfigurasi
+        # Parameter format dan retrieve tidak digunakan di sini untuk backup
       register: config_backup
 
     - name: Simpan konfigurasi ke file lokal (di localhost)
+      # Output dari backup: yes ada di config_backup.backup_path
       ansible.builtin.copy:
-        content: "{{ config_backup.config }}"
+        # Modul junos_config dengan backup: yes akan menyimpan path file di .backup_path
+        # Konten file akan langsung disalin dari path tersebut
+        src: "{{ config_backup.backup_path }}"
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
+        remote_src: yes # Penting: Beritahu Ansible bahwa sumber file ada di remote (perangkat Juniper)
       delegate_to: localhost # Pastikan ini berjalan di mesin lokal Ansible
 
     - name: Tampilkan pesan sukses
