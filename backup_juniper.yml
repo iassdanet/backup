@@ -5,11 +5,12 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    backup_dir: "/var/lib/awx/projects/_14__backup_stdt/backup"
+    backup_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    - name: Pastikan folder backup ada (lokal, di pod AWX)
+    - name: Pastikan folder backup ada
       file:
         path: "{{ backup_dir }}"
         state: directory
@@ -22,20 +23,19 @@
         commands: show configuration
       register: config_output
 
-    - name: Debug - lihat hasil konfigurasi
-      debug:
-        var: config_output.stdout
-
-    - name: Normalisasi hostname
-      set_fact:
-        safe_hostname: "{{ inventory_hostname | replace(' ', '_') }}"
-
-    - name: Simpan konfigurasi ke file unik (hostname + timestamp, di AWX pod)
+    - name: Simpan konfigurasi ke file permanen di direktori proyek
       copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ backup_dir }}/{{ safe_hostname }}_{{ timestamp }}.txt"
+        dest: "{{ file_path }}"
       delegate_to: localhost
 
-    - name: Debug - konfirmasi path hasil backup
+    - name: Verifikasi file dibuat
+      stat:
+        path: "{{ file_path }}"
+      register: file_check
+      delegate_to: localhost
+
+    - name: Debug - Tampilkan hasil verifikasi
       debug:
-        msg: "Config {{ safe_hostname }} disimpan di {{ backup_dir }}/{{ safe_hostname }}_{{ timestamp }}.txt"
+        msg: "File {{ file_path }} ada: {{ file_check.stat.exists }}"
+      delegate_to: localhost
