@@ -1,30 +1,42 @@
+---
 - name: Backup konfigurasi semua Junos host
   hosts: juniper_switches
   gather_facts: no
   collections:
     - junipernetworks.junos
+  # Ini adalah jenis koneksi yang tepat untuk junos_config
+  connection: ansible.netcommon.netconf
 
   vars:
     backup_folder: "./backup_configs"
 
+  pre_tasks:
+    - name: Pastikan ncclient terinstal (diperlukan untuk koneksi NETCONF)
+      ansible.builtin.pip:
+        name: ncclient
+        state: present
+      delegate_to: localhost # Pastikan ini dijalankan di control node Ansible
+
   tasks:
-    - name: Buat folder backup jika belum ada
-      file:
+    - name: Buat folder backup jika belum ada (di localhost)
+      ansible.builtin.file:
         path: "{{ backup_folder }}"
         state: directory
         mode: '0755'
+      delegate_to: localhost # Penting: Pastikan ini dijalankan di mesin lokal Ansible
 
-    - name: Ambil konfigurasi perangkat
-      junos_config:
+    - name: Ambil konfigurasi perangkat (via NETCONF)
+      junipernetworks.junos.junos_config:
         retrieve: config
-        format: text   # Bisa juga xml atau set
+        format: text # Bisa juga 'set' untuk format yang lebih mudah dibaca/digunakan kembali
       register: config_backup
 
-    - name: Simpan konfigurasi ke file lokal
-      copy:
+    - name: Simpan konfigurasi ke file lokal (di localhost)
+      ansible.builtin.copy:
         content: "{{ config_backup.config }}"
         dest: "{{ backup_folder }}/{{ inventory_hostname }}_backup_{{ ansible_date_time.iso8601 }}.conf"
+      delegate_to: localhost # Penting: Pastikan ini dijalankan di mesin lokal Ansible
 
     - name: Tampilkan pesan sukses
-      debug:
+      ansible.builtin.debug:
         msg: "Backup konfigurasi {{ inventory_hostname }} berhasil disimpan di {{ backup_folder }}"
