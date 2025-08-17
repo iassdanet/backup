@@ -7,7 +7,7 @@
   tasks:
     - name: Ensure backup directory exists
       file:
-        path: backup
+        path: /home/iass/awx-deploy/backup
         state: directory
       register: backup_dir
 
@@ -27,9 +27,9 @@
     - name: Save config to file
       copy:
         content: "{{ config_output.stdout[0] }}"
-        dest: "backup/{{ inventory_hostname }}.txt"
+        dest: "/home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
       register: save_result
 
     - name: Debug - confirm file saved
       debug:
-        msg: "Configuration saved to backup/{{ inventory_hostname }}.txt"
+        msg: "Configuration saved to /home/iass/awx-deploy/backup/{{ inventory_hostname }}.txt"
