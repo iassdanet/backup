@@ -1,33 +1,35 @@
 ---
-- name: Backup konfigurasi Juniper via NETCONF
+- name: Backup Junos configuration (display set)
   hosts: juniper_switches
   connection: ansible.netcommon.netconf
   gather_facts: no
 
   vars:
     backup_root: "./backup"
-    backup_date: "{{ lookup('pipe','date +%Y-%m-%d') }}"
-    backup_dir: "{{ backup_root }}/{{ backup_date }}"
+    backup_date: "{{ lookup('pipe','date +%Y%m%d') }}"
 
   tasks:
     - name: Buat folder backup per tanggal
+      delegate_to: localhost
       ansible.builtin.file:
-        path: "{{ backup_dir }}"
+        path: "{{ backup_root }}/{{ inventory_hostname }}/{{ backup_date }}"
         state: directory
-      delegate_to: localhost
+        mode: '0755'
 
-    - name: Ambil konfigurasi aktif via RPC
+    - name: Ambil konfigurasi full (display set)
       junipernetworks.junos.junos_rpc:
-        rpc: get-config
+        rpc: get-configuration
         output: text
-      register: running_config
+        args:
+          format: set
+      register: config_out
 
-    - name: Debug isi config (cek sukses/tidak)
-      ansible.builtin.debug:
-        var: running_config['stdout'][0]
-
-    - name: Simpan konfigurasi ke file lokal (.txt)
-      ansible.builtin.copy:
-        content: "{{ running_config['stdout'][0] }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}-{{ backup_date }}.txt"
+    - name: Simpan hasil ke file .txt
       delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ config_out.stdout }}"
+        dest: "{{ backup_root }}/{{ inventory_hostname }}/{{ backup_date }}/running-config.txt"
+
+    - name: Debug kalau sukses
+      ansible.builtin.debug:
+        msg: "Backup sukses disimpan di {{ backup_root }}/{{ inventory_hostname }}/{{ backup_date }}/running-config.txt"
