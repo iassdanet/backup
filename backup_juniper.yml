@@ -6,7 +6,7 @@
 
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    repo_url: "https://{{ github_token }}@github.com/danetiass/backupconfig.git"
+    repo_url: "git@github.com:iassdanet/backupconfig.git"
     local_repo: "/tmp/backupconfig"
     backup_file: "{{ local_repo }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
 
@@ -21,6 +21,8 @@
         repo: "{{ repo_url }}"
         dest: "{{ local_repo }}"
         version: main
+        key_file: "/home/ansible/.ssh/id_rsa"   # <-- pastikan private key yg kamu pake
+        accept_hostkey: yes
       delegate_to: localhost
 
     - name: Save configuration to file
@@ -32,9 +34,10 @@
     - name: Commit and push backup file
       shell: |
         cd {{ local_repo }}
+        git config --global --add safe.directory {{ local_repo }}
         git config user.name "awx-bot"
         git config user.email "awx-bot@example.com"
         git add .
-        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
+        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}" || echo "No changes to commit"
         git push origin main
       delegate_to: localhost
