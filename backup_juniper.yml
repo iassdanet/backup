@@ -21,7 +21,7 @@
         repo: "{{ repo_url }}"
         dest: "{{ local_repo }}"
         version: main
-        key_file: "/home/ansible/.ssh/id_rsa"   # <-- pastikan private key yg kamu pake
+        key_file: key_file: "/root/.ssh/id_rsa"   # <-- pastikan private key yg kamu pake
         accept_hostkey: yes
       delegate_to: localhost
 
