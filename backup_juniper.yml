@@ -5,12 +5,21 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    host_final_dir: "/home/iass/awx-deploy/backup"
+    # Folder backup writable di Execution Environment
+    host_final_dir: "/runner/backup"
+
+    # Timestamp untuk file backup
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+    # File backup full path
     backup_file: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
+    # Namespace dan label pod AWX task
+    awx_namespace: "awx"
+    awx_task_label: "app.kubernetes.io/name=awx-demo-task"
+
   tasks:
-    - name: Pastikan folder backup ada di host
+    - name: Pastikan folder backup ada di EE
       ansible.builtin.file:
         path: "{{ host_final_dir }}"
         state: directory
@@ -23,7 +32,7 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi langsung ke host
+    - name: Simpan konfigurasi langsung ke host/EE
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_file }}"
@@ -31,7 +40,7 @@
 
     - name: Ambil nama pod AWX task yang Running
       ansible.builtin.shell: |
-        kubectl get pods -n awx -l app.kubernetes.io/name=awx-demo-task \
+        kubectl get pods -n {{ awx_namespace }} -l {{ awx_task_label }} \
           -o jsonpath='{.items[0].metadata.name}'
       register: awx_pod
       delegate_to: localhost
