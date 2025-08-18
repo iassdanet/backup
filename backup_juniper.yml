@@ -5,18 +5,20 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    backup_dir: "/home/iass/awx-deploy/junos-backups"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    backup_file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
+    backup_file: "/tmp/{{ inventory_hostname }}_{{ timestamp }}.conf"
+
+  vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 
   tasks:
-    - name: Get config from device
-      ansible.builtin.shell: |
-        ssh {{ ansible_user }}@{{ ansible_host }} 'show configuration'
+    - name: Get Junos config
+      junipernetworks.junos.junos_config:
+        retrieve: "config"
       register: config_output
 
-    - name: Save configuration to a file on the local server
-      ansible.builtin.copy:
-        content: "{{ config_output.stdout | default('EMPTY OUTPUT') }}"
-        dest: "{{ backup_file_path }}"
-      delegate_to: awx-host
+    - name: Save config to AWX pod (temporary)
+      copy:
+        content: "{{ config_output.config }}"
+        dest: "{{ backup_file }}"
+      delegate_to: localhost
