@@ -5,15 +5,14 @@
   connection: ansible.netcommon.netconf
 
   tasks:
-    - name: Get committed config in text format
-      junipernetworks.junos.junos_config:
-        retrieve: committed
-        format: text
+    - name: Get committed config (text format)
+      junipernetworks.junos.junos_command:
+        commands: "show configuration"
       register: config_output
 
     - name: Save config to local file
       copy:
-        content: "{{ config_output.config }}"
+        content: "{{ config_output.stdout[0] }}"
         dest: "backup/{{ inventory_hostname }}.txt"
 
     - name: Initialize Git repo (if not already)
