@@ -11,11 +11,11 @@
 
   tasks:
     # --- Task 1: Pastikan Direktori Backup Ada di Server Fisik ---
-    # Menggunakan perintah shell untuk menghindari masalah aneh
+    # Menggunakan perintah shell dengan jalur lengkap ke sudo
     - name: Ensure backup directory exists on the local server
       ansible.builtin.shell: |
-        sudo mkdir -p "{{ backup_dir }}"
-        sudo chown -R iass:iass "{{ backup_dir }}"
+        /usr/bin/sudo mkdir -p "{{ backup_dir }}"
+        /usr/bin/sudo chown -R iass:iass "{{ backup_dir }}"
       delegate_to: awx-host
       args:
         warn: false
