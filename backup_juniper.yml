@@ -1,8 +1,14 @@
 ---
 - name: Backup Junos configuration and push to GitHub
-  hosts: all
+  hosts: juniper_switches
   gather_facts: no
-  connection: ansible.netcommon.netconf
+  connection: netconf
+
+  vars:
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    local_repo: "/tmp/backupconfig"
+    backup_dir: "{{ local_repo }}/backup"
+    backup_file: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
 
   tasks:
     - name: Get committed config (text format)
@@ -10,29 +16,38 @@
         commands: "show configuration"
       register: config_output
 
+    - name: Clone repo if not exists
+      git:
+        repo: "git@github.com:iassdanet/backupconfig.git"
+        dest: "{{ local_repo }}"
+        version: main
+        accept_hostkey: yes
+      delegate_to: localhost
+
+    - name: Ensure backup directory exists
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+      delegate_to: localhost
+
     - name: Save config to local file
       copy:
-        content: "{{ config_output.stdout[0] }}"
-        dest: "backup/{{ inventory_hostname }}.txt"
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        dest: "{{ backup_file }}"
+      delegate_to: localhost
 
-    - name: Initialize Git repo (if not already)
-      command: git init
+    - name: Commit and push backup
+      shell: |
+        cd {{ local_repo }}
+        git config user.name "awx-bot"
+        git config user.email "awx-bot@example.com"
+        git add backup/
+        if ! git diff --cached --quiet; then
+          git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
+          git push origin main
+        else
+          echo "No changes to commit"
+        fi
       args:
-        chdir: backup/
-      ignore_errors: yes
-
-    - name: Add all changes to Git
-      command: git add .
-      args:
-        chdir: backup/
-
-    - name: Commit changes
-      command: git commit -m "Backup {{ inventory_hostname }} on {{ ansible_date_time.date }} {{ ansible_date_time.time }}"
-      args:
-        chdir: backup/
-      ignore_errors: yes
-
-    - name: Push to GitHub
-      command: git push origin main
-      args:
-        chdir: backup/
+        executable: /bin/bash
+      delegate_to: localhost
