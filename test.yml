@@ -1,0 +1,19 @@
+---
+- name: Verifikasi user dan izin di awx-host
+  hosts: awx-host
+  gather_facts: no
+
+  tasks:
+    - name: Tampilkan user yang sedang berjalan
+      ansible.builtin.command: whoami
+      register: whoami_output
+
+    - name: Tampilkan detail user dan direktori backup
+      ansible.builtin.command: ls -ld /home/iass/awx-deploy/junos-backups
+      register: ls_output
+
+    - name: Print output
+      ansible.builtin.debug:
+        msg:
+          - "User yang digunakan Ansible: {{ whoami_output.stdout }}"
+          - "Detail direktori: {{ ls_output.stdout }}"
