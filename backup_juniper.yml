@@ -6,7 +6,7 @@
 
   vars:
     # Folder backup writable di Execution Environment
-    host_final_dir: "/runner/backup"
+    host_final_dir: "/home/iass/awx-deploy/backup"
 
     # Timestamp untuk file backup
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
