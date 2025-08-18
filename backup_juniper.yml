@@ -1,35 +1,44 @@
 ---
 - name: Backup Junos configuration
+  # Playbook ini menargetkan grup 'juniper_switches'
   hosts: juniper_switches
   gather_facts: no
   connection: ansible.netcommon.netconf
 
   vars:
-    # Folder backup writable di Execution Environment
-    host_final_dir: "/home/iass/awx-deploy/backup"
+    # --- Variabel Utama ---
+    # Direktori backup di server fisik/lokal Anda (awx-host).
+    # Pastikan jalur ini bisa ditulis oleh user 'iass'.
+    backup_dir: "/home/iass/awx-deploy/junos-backups"
 
-    # Timestamp untuk file backup
+    # Timestamp untuk nama file backup, dibuat saat playbook dijalankan.
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
 
-    # File backup full path
-    backup_file: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
+    # Nama file backup lengkap, menggunakan hostname dan timestamp.
+    backup_file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    - name: Pastikan folder backup ada di EE
+    # --- Task 1: Pastikan Direktori Backup Ada di Server Fisik ---
+    # Task ini menggunakan 'delegate_to' untuk dijalankan di 'awx-host'.
+    - name: Ensure backup directory exists on the local server
       ansible.builtin.file:
-        path: "{{ host_final_dir }}"
+        path: "{{ backup_dir }}"
         state: directory
         mode: '0755'
-      delegate_to: localhost
+      delegate_to: awx-host
       run_once: true
 
-    - name: Ambil konfigurasi aktif dari switch
+    # --- Task 2: Ambil Konfigurasi dari Perangkat Juniper ---
+    # Task ini terhubung ke setiap perangkat Junos dan menjalankan perintah.
+    - name: Retrieve active configuration from the device
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi langsung ke EE/host
+    # --- Task 3: Simpan Konfigurasi ke File di Server Fisik ---
+    # Task ini menyalin output dari 'junos_command' ke file di 'awx-host'.
+    - name: Save configuration to a file on the local server
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ backup_file }}"
-      delegate_to: localhost
+        dest: "{{ backup_file_path }}"
+      delegate_to: awx-host
