@@ -5,16 +5,14 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    pod_temp_dir: "/tmp/backup"
     host_final_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    file_path_pod: "{{ pod_temp_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
-    file_path_host: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
+    backup_file: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    - name: Pastikan folder sementara di pod ada
+    - name: Pastikan folder backup ada di host
       ansible.builtin.file:
-        path: "{{ pod_temp_dir }}"
+        path: "{{ host_final_dir }}"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -25,25 +23,21 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi ke file di dalam pod
+    - name: Simpan konfigurasi langsung ke host
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ file_path_pod }}"
+        dest: "{{ backup_file }}"
       delegate_to: localhost
 
     - name: Ambil nama pod AWX task yang Running
-      command: kubectl get pods -n awx -l app=awx-demo -o jsonpath='{.items[0].metadata.name}'
-      register: pod_result
-      delegate_to: localhost   # pastikan di host yg ada kubectl
+      ansible.builtin.shell: |
+        kubectl get pods -n awx -l app.kubernetes.io/name=awx-demo-task \
+          -o jsonpath='{.items[0].metadata.name}'
+      register: awx_pod
+      delegate_to: localhost
 
-    - name: Set POD_NAME fact
-      set_fact:
-        POD_NAME: "{{ pod_result.stdout }}"
-
-    - name: Debug pod aktif
-      debug:
-        msg: "Pod yang dipakai: {{ POD_NAME }}"
-
-    - name: Salin file dari pod ke host
-      command: kubectl cp -n awx {{ POD_NAME }}:{{ file_path_pod }} {{ file_path_host }}
-      delegate_to: localhost   # kubectl jalan di host yg punya binary
+    - name: Salin file backup ke pod AWX (opsional)
+      ansible.builtin.shell: |
+        kubectl cp "{{ backup_file }}" "{{ awx_pod.stdout }}:{{ backup_file }}"
+      when: awx_pod.stdout != ""
+      delegate_to: localhost
