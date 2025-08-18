@@ -25,4 +25,25 @@
         commands: show configuration
       register: config_output
 
-    - name: S
+    - name: Simpan konfigurasi ke file di dalam pod
+      ansible.builtin.copy:
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        dest: "{{ file_path_pod }}"
+      delegate_to: localhost
+
+    - name: Ambil nama pod AWX task yang Running
+      command: kubectl get pods -n awx -l app=awx-demo -o jsonpath='{.items[0].metadata.name}'
+      register: pod_result
+      delegate_to: localhost   # pastikan di host yg ada kubectl
+
+    - name: Set POD_NAME fact
+      set_fact:
+        POD_NAME: "{{ pod_result.stdout }}"
+
+    - name: Debug pod aktif
+      debug:
+        msg: "Pod yang dipakai: {{ POD_NAME }}"
+
+    - name: Salin file dari pod ke host
+      command: kubectl cp -n awx {{ POD_NAME }}:{{ file_path_pod }} {{ file_path_host }}
+      delegate_to: localhost   # kubectl jalan di host yg punya binary
