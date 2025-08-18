@@ -10,14 +10,13 @@
     backup_file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    # --- HANYA ADA DUA TUGAS INI ---
-    - name: Retrieve active configuration from the device
-      junipernetworks.junos.junos_command:
-        commands: show configuration
+    - name: Get config from device
+      ansible.builtin.shell: |
+        ssh {{ ansible_user }}@{{ ansible_host }} 'show configuration'
       register: config_output
 
     - name: Save configuration to a file on the local server
       ansible.builtin.copy:
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
+        content: "{{ config_output.stdout | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_file_path }}"
       delegate_to: awx-host
