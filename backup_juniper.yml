@@ -14,10 +14,6 @@
     # File backup full path
     backup_file: "{{ host_final_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
-    # Namespace dan label pod AWX task
-    awx_namespace: "awx"
-    awx_task_label: "app.kubernetes.io/name=awx-demo-task"
-
   tasks:
     - name: Pastikan folder backup ada di EE
       ansible.builtin.file:
@@ -32,21 +28,8 @@
         commands: show configuration
       register: config_output
 
-    - name: Simpan konfigurasi langsung ke host/EE
+    - name: Simpan konfigurasi langsung ke EE/host
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_file }}"
-      delegate_to: localhost
-
-    - name: Ambil nama pod AWX task yang Running
-      ansible.builtin.shell: |
-        kubectl get pods -n {{ awx_namespace }} -l {{ awx_task_label }} \
-          -o jsonpath='{.items[0].metadata.name}'
-      register: awx_pod
-      delegate_to: localhost
-
-    - name: Salin file backup ke pod AWX (opsional)
-      ansible.builtin.shell: |
-        kubectl cp "{{ backup_file }}" "{{ awx_pod.stdout }}:{{ backup_file }}"
-      when: awx_pod.stdout != ""
       delegate_to: localhost
