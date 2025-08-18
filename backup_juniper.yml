@@ -6,7 +6,9 @@
 
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    backup_file: "/tmp/{{ inventory_hostname }}_{{ timestamp }}.txt"
+    repo_url: "https://{{ github_token }}@github.com/danetiass/backupconfig.git"
+    local_repo: "/tmp/backupconfig"
+    backup_file: "{{ local_repo }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
 
   tasks:
     - name: Get config from device
@@ -14,28 +16,24 @@
         commands: "show configuration | display set"
       register: config_output
 
+    - name: Clone repo if not exists
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ local_repo }}"
+        version: main
+      delegate_to: localhost
+
     - name: Save configuration to file
       copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_file }}"
       delegate_to: localhost
 
-    - name: Initialize git repo (if not exists)
+    - name: Commit and push backup file
       shell: |
-        cd /tmp
-        if [ ! -d ".git" ]; then
-          git init
-          git remote add origin https://{{ github_token }}@github.com/YOURORG/YOURREPO.git
-        fi
-      delegate_to: localhost
-
-    - name: Commit and push backup file to GitHub
-      shell: |
-        cd /tmp
+        cd {{ local_repo }}
         git config user.name "awx-bot"
         git config user.email "awx-bot@example.com"
-        cp {{ backup_file }} repo/
-        cd repo
         git add .
         git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
         git push origin main
