@@ -21,8 +21,7 @@
         repo: "{{ repo_url }}"
         dest: "{{ local_repo }}"
         version: main
-        key_file: key_file: "/root/.ssh/id_rsa"   # <-- pastikan private key yg kamu pake
-        accept_hostkey: yes
+        key_file: "/root/.ssh/id_rsa"
       delegate_to: localhost
 
     - name: Save configuration to file
@@ -34,7 +33,6 @@
     - name: Commit and push backup file
       shell: |
         cd {{ local_repo }}
-        git config --global --add safe.directory {{ local_repo }}
         git config user.name "awx-bot"
         git config user.email "awx-bot@example.com"
         git add .
