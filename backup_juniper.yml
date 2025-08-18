@@ -2,11 +2,10 @@
 - name: Backup Junos configuration and push to GitHub
   hosts: juniper_switches
   gather_facts: no
-  connection: netconf
 
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    repo_url: "git@github.com:iassdanet/backupconfig.git"
+    repo_url: "git@github.com:danetiass/backupconfig.git"
     local_repo: "/tmp/backupconfig"
     backup_file: "{{ local_repo }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
 
@@ -21,7 +20,6 @@
         repo: "{{ repo_url }}"
         dest: "{{ local_repo }}"
         version: main
-        key_file: "/root/.ssh/id_rsa"
       delegate_to: localhost
 
     - name: Save configuration to file
@@ -36,6 +34,6 @@
         git config user.name "awx-bot"
         git config user.email "awx-bot@example.com"
         git add .
-        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}" || echo "No changes to commit"
+        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
         git push origin main
       delegate_to: localhost
