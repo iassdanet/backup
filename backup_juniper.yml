@@ -1,39 +1,39 @@
 ---
 - name: Backup Junos configuration and push to GitHub
-  hosts: juniper_switches
+  hosts: all
   gather_facts: no
-
-  vars:
-    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
-    repo_url: "git@github.com:danetiass/backupconfig.git"
-    local_repo: "/tmp/backupconfig"
-    backup_file: "{{ local_repo }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
+  connection: ansible.netcommon.netconf
 
   tasks:
-    - name: Get config from device
-      junipernetworks.junos.junos_command:
-        commands: "show configuration | display set"
+    - name: Get committed config in text format
+      junipernetworks.junos.junos_config:
+        retrieve: committed
+        format: text
       register: config_output
 
-    - name: Clone repo if not exists
-      git:
-        repo: "{{ repo_url }}"
-        dest: "{{ local_repo }}"
-        version: main
-      delegate_to: localhost
-
-    - name: Save configuration to file
+    - name: Save config to local file
       copy:
-        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
-        dest: "{{ backup_file }}"
-      delegate_to: localhost
+        content: "{{ config_output.config }}"
+        dest: "backup/{{ inventory_hostname }}.txt"
 
-    - name: Commit and push backup file
-      shell: |
-        cd {{ local_repo }}
-        git config user.name "awx-bot"
-        git config user.email "awx-bot@example.com"
-        git add .
-        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
-        git push origin main
-      delegate_to: localhost
+    - name: Initialize Git repo (if not already)
+      command: git init
+      args:
+        chdir: backup/
+      ignore_errors: yes
+
+    - name: Add all changes to Git
+      command: git add .
+      args:
+        chdir: backup/
+
+    - name: Commit changes
+      command: git commit -m "Backup {{ inventory_hostname }} on {{ ansible_date_time.date }} {{ ansible_date_time.time }}"
+      args:
+        chdir: backup/
+      ignore_errors: yes
+
+    - name: Push to GitHub
+      command: git push origin main
+      args:
+        chdir: backup/
