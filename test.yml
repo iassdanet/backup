@@ -1,6 +1,6 @@
 ---
 - name: Verifikasi user dan izin di awx-host
-  hosts: juniper_switches
+  hosts: awx-host
   gather_facts: no
 
   tasks:
