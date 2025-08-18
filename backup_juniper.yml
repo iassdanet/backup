@@ -5,20 +5,18 @@
   connection: ansible.netcommon.netconf
 
   vars:
+    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     backup_file: "/tmp/{{ inventory_hostname }}_{{ timestamp }}.conf"
 
-  vars:
-    ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
-
   tasks:
-    - name: Get Junos config
-      junipernetworks.junos.junos_config:
-        retrieve: "config"
+    - name: Get running configuration from Junos
+      junipernetworks.junos.junos_command:
+        commands: "show configuration | display set"
       register: config_output
 
-    - name: Save config to AWX pod (temporary)
+    - name: Save configuration to file inside AWX
       copy:
-        content: "{{ config_output.config }}"
+        content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
         dest: "{{ backup_file }}"
       delegate_to: localhost
