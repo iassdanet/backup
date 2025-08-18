@@ -6,9 +6,9 @@
 
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    repo_url: "ssh://git@ssh.github.com:443/iassdanet/backupconfig.git"
     local_repo: "/tmp/backupconfig"
-    backup_dir: "{{ local_repo }}/backup"
-    backup_file: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
+    backup_file: "{{ local_repo }}/{{ inventory_hostname }}_{{ timestamp }}.txt"
 
   tasks:
     - name: Get committed config (text format)
@@ -18,16 +18,10 @@
 
     - name: Clone repo if not exists
       git:
-        repo: "git@github.com:iassdanet/backupconfig.git"
+        repo: "{{ repo_url }}"
         dest: "{{ local_repo }}"
         version: main
         accept_hostkey: yes
-      delegate_to: localhost
-
-    - name: Ensure backup directory exists
-      file:
-        path: "{{ backup_dir }}"
-        state: directory
       delegate_to: localhost
 
     - name: Save config to local file
@@ -36,18 +30,12 @@
         dest: "{{ backup_file }}"
       delegate_to: localhost
 
-    - name: Commit and push backup
+    - name: Commit and push backup file
       shell: |
         cd {{ local_repo }}
         git config user.name "awx-bot"
         git config user.email "awx-bot@example.com"
-        git add backup/
-        if ! git diff --cached --quiet; then
-          git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}"
-          git push origin main
-        else
-          echo "No changes to commit"
-        fi
-      args:
-        executable: /bin/bash
+        git add .
+        git commit -m "Backup {{ inventory_hostname }} at {{ timestamp }}" || echo "No changes to commit"
+        git push origin main
       delegate_to: localhost
