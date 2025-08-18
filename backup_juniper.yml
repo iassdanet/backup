@@ -1,15 +1,13 @@
 ---
 - name: Backup Junos configuration
-  # Playbook ini menargetkan grup 'juniper_switches'
   hosts: juniper_switches
   gather_facts: no
   connection: ansible.netcommon.netconf
 
   vars:
     # --- Variabel Utama ---
-    # Direktori backup di server fisik/lokal Anda.
-    # Menggunakan /tmp untuk menghindari masalah izin.
-    backup_dir: "/tmp/junos-backups"
+    # Gunakan kembali jalur backup yang permanen di server fisik Anda.
+    backup_dir: "/home/iass/awx-deploy/junos-backups"
 
     # Timestamp untuk nama file backup, dibuat saat playbook dijalankan.
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
@@ -18,24 +16,14 @@
     backup_file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    # --- Task 1: Pastikan Direktori Backup Ada di Server Fisik ---
-    # Menggunakan 'delegate_to' untuk dijalankan di 'awx-host'.
-    # Task ini akan membuat direktori /tmp/junos-backups.
-    - name: Ensure backup directory exists on the local server
-      ansible.builtin.file:
-        path: "{{ backup_dir }}"
-        state: directory
-        mode: '0755'
-      delegate_to: awx-host
-      run_once: true
-
-    # --- Task 2: Ambil Konfigurasi dari Perangkat Juniper ---
+    # --- Task 1: Ambil Konfigurasi dari Perangkat Juniper ---
     - name: Retrieve active configuration from the device
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
-    # --- Task 3: Simpan Konfigurasi ke File di Server Fisik ---
+    # --- Task 2: Simpan Konfigurasi ke File di Server Fisik ---
+    # Task ini akan menulis langsung ke direktori yang sudah kita siapkan
     - name: Save configuration to a file on the local server
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
