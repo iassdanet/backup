@@ -5,8 +5,9 @@
   connection: ansible.netcommon.netconf
 
   vars:
-    # Menggunakan jalur sementara di dalam pod
+    # Jalur sementara di dalam pod
     pod_temp_dir: "/tmp/backup"
+    # Jalur final di host lokal
     host_final_dir: "/home/iass/awx-deploy/backup"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     file_path_pod: "{{ pod_temp_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
@@ -32,8 +33,19 @@
         dest: "{{ file_path_pod }}"
       delegate_to: localhost
 
+    - name: Ambil nama pod AWX task yang Running
+      command: kubectl get pods -n awx -l app.kubernetes.io/name=awx-demo-task -o jsonpath='{.items[0].metadata.name}'
+      register: pod_result
+      delegate_to: localhost
+
+    - name: Set POD_NAME fact
+      set_fact:
+        POD_NAME: "{{ pod_result.stdout }}"
+
+    - name: Debug cek pod aktif
+      debug:
+        msg: "Pod yang dipakai: {{ POD_NAME }}"
+
     - name: Salin file dari pod ke host
-      ansible.builtin.shell: |
-        POD_NAME=$(kubectl get pods -n awx -o=jsonpath='{.items[?(@.status.phase=="Running")].metadata.name}' | grep 'awx-web' | head -n 1)
-        kubectl cp "{{ POD_NAME }}:{{ file_path_pod }}" "{{ file_path_host }}"
+      command: kubectl cp -n awx {{ POD_NAME }}:{{ file_path_pod }} {{ file_path_host }}
       delegate_to: localhost
