@@ -10,23 +10,12 @@
     backup_file_path: "{{ backup_dir }}/{{ inventory_hostname | replace(' ', '_') }}_{{ timestamp }}.txt"
 
   tasks:
-    # --- Task 1: Pastikan Direktori Backup Ada di Server Fisik ---
-    # Menggunakan perintah shell dengan jalur lengkap ke sudo
-    - name: Ensure backup directory exists on the local server
-      ansible.builtin.shell: |
-        /usr/bin/sudo mkdir -p "{{ backup_dir }}"
-        /usr/bin/sudo chown -R iass:iass "{{ backup_dir }}"
-      delegate_to: awx-host
-      args:
-        warn: false
-
-    # --- Task 2: Ambil Konfigurasi dari Perangkat Juniper ---
+    # --- HANYA ADA DUA TUGAS INI ---
     - name: Retrieve active configuration from the device
       junipernetworks.junos.junos_command:
         commands: show configuration
       register: config_output
 
-    # --- Task 3: Simpan Konfigurasi ke File di Server Fisik ---
     - name: Save configuration to a file on the local server
       ansible.builtin.copy:
         content: "{{ config_output.stdout[0] | default('EMPTY OUTPUT') }}"
